@@ -7,6 +7,10 @@ sys.path.append(os.pardir) # 親ディレクトリのファイルをインポー
 import numpy as np
 from dataset.mnist import load_mnist
 from PIL import Image
+import pickle
+
+def sigmoid(x):
+  return 1 / (1 + np.exp(-x))
 
 def img_show(img):
   pil_img = Image.fromarray(np.uint8(img))
@@ -44,12 +48,38 @@ img_show(img)
 def get_data():
   (x_train, t_train), (x_test, t_test) = \
     load_mnist(normalize=True, flatten=True, one_hot_label=False)
+    # normalize=True により、画像の各ピクセルの値を255で除算しデータの値が0.0~1.0に収まるように変換される
+    # このようにデータをある決まった範囲に変換する処理を「正規化」という
   return x_test, t_test
 
-def init_network():
-  with open("sample_weight.pkl", 'rb') as f:
+def init_network(): # 学習済みの重みパラメータを読み込む
+  with open("/Users/yuri/sophia/deep-learning-from-zero/deep-learning-from-scratch-master/ch03/sample_weight.pkl", 'rb') as f:
     network = pickle.load(f)
   return network
 
 def predict(network, x):
-  W1, W2, W3 = 
+  W1, W2, W3 = network['W1'], network['W2'], network['W3']
+  b1, b2, b3 = network['b1'], network['b2'], network['b3']
+
+  a1 = np.dot(x, W1) + b1
+  z1 = sigmoid(a1)
+  a2 = np.dot(z1, W2) + b2
+  z2 = sigmoid(a2)
+  a3 = np.dot(z2, W3) + b3
+  y = sigmoid(a3)
+  return y
+
+
+# 認識精度(どれだけ正しく分類できるか)を評価
+x, t = get_data()
+network = init_network()
+
+accuracy_cnt = 0
+for i in range(len(x)):
+  y = predict(network, x[i])
+  p = np.argmax(y) # 最も確率の高い要素のインデックスを取得
+  if p == t[i]:
+    accuracy_cnt += 1
+
+print( "Accuracy:" + str(float(accuracy_cnt) / len(x)) )
+# Accuracy:0.9352
